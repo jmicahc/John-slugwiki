@@ -101,6 +101,7 @@ def index():
             if row.id > Max.id:
                Max = row  #row of highest id.
         
+        # get the content of the most recent revision.
         r = Max 
         s = r.body if r is not None else ''
         
@@ -127,15 +128,7 @@ def index():
             form.add_button('Cancel', URL('default', 'index'))
             # Processes the form.
             if form.process().accepted:
-                # Writes the new content.
-                if r is None:
-                    # First time: we need to insert it.
-                    db.revision.insert(id=1, body=form.vars.body)
-                else:
-                    # We update it.
-                    r.update_record(body=form.vars.body)
-                # We redirect here, so we get this page with GET rather than POST,
-                # and we go out of edit mode.
+                db.revision.insert(ref=page_id, body=form.vars.body)
                 redirect(URL('default', 'index', args=request.args))
             content = form
         else:
