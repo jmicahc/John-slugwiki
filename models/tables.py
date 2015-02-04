@@ -13,7 +13,7 @@ db.define_table('pagetable', # Name 'page' is reserved unfortunately.
 
 
 db.define_table('revision',
-    Field('page_id', 'ref'),
+    Field('page_id'),
     Field('auth'),
     Field('date_posted', 'datetime', default=request.now),
     Field('body', 'text'), # This is the main content of a revision.

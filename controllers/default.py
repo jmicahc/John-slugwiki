@@ -72,6 +72,7 @@ def confirm():
     else:
         redirect(URL('dfault', 'index', args=request.args))
 
+    return dict(form-form)
 def index():
     """
     This controller is here for testing purposes only.
@@ -80,14 +81,14 @@ def index():
     response.title= ''
     title = request.args(0) or 'main page'
     display_title = title.title() # Uppernice the title
-
     if len(db(db.pagetable.title==title))==0:
-        #display a confirmation form asking whether the user   
+    logging.info(query);
+    if len(db(db.pagetable.title==title).select())==0:
         #wants to create the page. If the user confirms, you
         #you need to have the user edit an empty revision. When
         #the revision is saved, create both the new page and the
-        #innitial revision for the page.
         redirct(URL('default', 'confirm'), args=[title])
+        redirect(URL('default', 'confirm', args=[title]))
     else:
         #get the page id.
         page_id = db.pagetable(db.pagetable.title==title).select().first()
