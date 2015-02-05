@@ -6,14 +6,13 @@ logging.basicConfig(filename='errors.log', level=logging.DEBUG)
 
 
 def confirm():
-    form = FORM.confirm("yes")
+    form = FORM.confirm("Yes", {"Back": redirect(session.back)})
     title = request.args(0)
-    db.pagetable.insert(title=title)
     if form.accepted:
         page_id = db.pagetable.insert(title=title)
         db.revision.insert(page_id=page_id)
          #get page ID.
-        redirect(URL('default', 'index', args=[title], vars=dict(edit='y')))
+        redirect(URL('default', 'index', args=[title], vars=dict(edit='true')))
 #    else:
 #        redirect(URL('default', 'index', args=request.args))
     return dict(form=form)
@@ -27,8 +26,8 @@ def index():
         # Let's uppernice the title.  The last 'title()' below
         # is actually a Python function, if you are wondering.
         display_title = title.title()
- 
 
+        
         #find the matching page.
         page = db(db.pagetable.title==title).select().first()
         if page == None:
@@ -36,19 +35,27 @@ def index():
         
 
         # Get the page ID.
-        page_id = page.id 
+        page_id = str(page.id)
 
 
         # Find the most recent revision with matching page ID.  
         r = db(db.revision.page_id == page_id).select(orderby=~db.revision.date_created).first()
  
-        s = r.body if r is not None else 'This page does not exist. Edit this to create one.'
+        s = r.body if r is not None else ''
+        
         # Are we editing?
         editing = request.vars.edit == 'true'
+
         # This is how you can use logging, very useful.
         logger.info("This is a request for page %r, with editing %r" %
              (title, editing))
+
+        
         if editing:
+            #if not auth.is_logged_in():
+            #    return dict(form=auth.run_login_onaccept(), display_title=display_title, content=content, 
+            #                                 editing=editing, logged_in=False)
+                
             # We are editing.  Gets the body s of the page.
             # Creates a form to edit the content s, with s as default.
             form = SQLFORM.factory(Field('body', 'text',
@@ -56,7 +63,7 @@ def index():
                 default=s
                 ))
             # You can easily add extra buttons to forms.
-            form.add_button('Cancel', URL('default', 'index'))
+            form.add_button('Cancel', URL('default', 'index', args=request.args))
             # Processes the form.
             if form.process().accepted:
                 # Writes the new content.
@@ -69,11 +76,11 @@ def index():
 
                 # We redirect here, so we get this page with GET rather than POST,
                 # and we go out of edit mode.
-                redirect(URL('default', 'index'))
+                redirect(URL('default', 'index', args=request.args))
             content = form
         else:
             # We are just displaying the page
-            content = s
+            content = s            
         return dict(display_title=display_title, content=content, editing=editing)
 
 def user():
