@@ -10,22 +10,26 @@ def confirm():
     title = request.args(0)
     if form.accepted:
         page_id = db.pagetable.insert(title=title)
-        db.revision.insert(page_id=page_id)
+        db.revision.insert(page_id=page_id, auth=auth.user.first_name + ' ' + auth.user.last_name)
          #get page ID.
         redirect(URL('default', 'index', args=[title], vars=dict(edit='true')))
 #    else:
 #        redirect(URL('default', 'index', args=request.args))
     return dict(form=form)
 
+@auth.requires_login()
+def login():
+    redirect(URL('default', 'index', args=[request.args(0) or 'Main Page'], vars=dict(edit='true')))
 
 def index():
-        title = request.args(0) or 'Main Page'
+        title = request.args(0) or 'Main_Page'
         form = None
-        content = None
+        content = ''
+        response.title = ''
 
         # Let's uppernice the title.  The last 'title()' below
         # is actually a Python function, if you are wondering.
-        display_title = title.title()
+        display_title = title.title().replace('_', ' ')
 
         
         #find the matching page.
@@ -50,38 +54,30 @@ def index():
         logger.info("This is a request for page %r, with editing %r" %
              (title, editing))
 
-        
         if editing:
-            #if not auth.is_logged_in():
-            #    return dict(form=auth.run_login_onaccept(), display_title=display_title, content=content, 
-            #                                 editing=editing, logged_in=False)
-                
+            if not auth.is_logged_in():
+                redirect(URL('default', 'login', args=request.args))
+
+            # Get first and last names
+            first_name = auth.user.first_name
+            last_name = auth.user.last_name
+
             # We are editing.  Gets the body s of the page.
             # Creates a form to edit the content s, with s as default.
             form = SQLFORM.factory(Field('body', 'text',
                 label='Content',
-                default=s
-                ))
+                default=s))
             # You can easily add extra buttons to forms.
             form.add_button('Cancel', URL('default', 'index', args=request.args))
             # Processes the form.
             if form.process().accepted:
-                # Writes the new content.
-                if r is None:
-                    # First time: we need to insert it.
-                    db.revision.insert(page_id=page_id, body=form.vars.body)
-                else:
-                    # We update it.
-                    db.revision.insert(page_id=page_id, body=form.vars.body)
-
-                # We redirect here, so we get this page with GET rather than POST,
-                # and we go out of edit mode.
-                redirect(URL('default', 'index', args=request.args))
+                 db.revision.insert(page_id=page_id, auth=first_name + ' ' + last_name, body=form.vars.body)
+                 redirect(URL('default', 'index', args=request.args))
             content = form
         else:
             # We are just displaying the page
-            content = s            
-        return dict(display_title=display_title, content=content, editing=editing)
+            content = s
+        return dict(display_title=display_title, content=content, editing=editing, revision=r)
 
 def user():
     """
